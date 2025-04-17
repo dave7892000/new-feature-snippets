@@ -1,0 +1,128 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <!-- <li class="breadcrumb-item"><a href="/">Home</a></li> -->
+    <li class="breadcrumb-item"><%= link_to "Back to folders index", admin_folders_url %></li>
+    
+    <% breadcrumbs = [] %>
+    <% current_folder = @folder %>
+    <% while current_folder.parent_folder_id != nil %>
+      <% parent_folder = Folder.find_by(id: current_folder.parent_folder_id) %>
+      <% breadcrumbs.unshift(parent_folder) %>
+      <% current_folder = parent_folder %>
+    <% end %>
+    
+    <% breadcrumbs.each do |folder| %>
+      <li class="breadcrumb-item">
+        <%= link_to folder.name, admin_folder_path(folder) %>
+      </li>
+    <% end %>
+  </ol>
+</nav>
+
+<div class="folders-list">
+  <div class="folders-heading">
+    <h2 class= "text-center"><%= @folder.name %></h2>
+  </div>
+
+  <h5>Create New Folder</h5>
+    <%= form_with model: @folder, url: admin_folders_path, method: :post do |f| %>
+      <%= f.text_field :name %>
+      <%= f.hidden_field :parent_folder_id, value: @folder.id %>
+      <%= f.submit "Create Nested Folder" %>
+    <% end %>
+</div>
+
+<table class="table table-striped table-with-buttons">
+  <thead>
+    <tr>
+      <th></th> <!-- left empty for the folder icon -->
+      <th>Name</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @folders.each do |folder| %>
+      <% if folder.discarded_at.nil? %>
+        <tr>
+          <td>
+            <% if folder.present? %>
+              <i class="fa-solid fa-folder"></i>
+            <% end %>
+          </td>
+          <td><p ><%= link_to folder.name, admin_folder_path(folder)%></p></td>
+          <td>
+            <div class="dropdown">
+              <a class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" id="dropdown_<%= folder.id %>" aria-haspopup="true" aria-expanded="false"><i class="fa fa-cog" aria-hidden="true"></i></a>
+            <div class="dropdown-menu" aria-labelledby="dropdown_<%= folder.id %>">
+              <a class="dropdown-item" href="<%= edit_admin_folder_path(folder) %>"><i class="fa fa-eye" aria-hidden="true"></i> Edit Folder Name</a>
+              <a class="dropdown-item" href="<%= admin_folder_path(folder) %>" data-turbo-method="delete" data-turbo-confirm="Are you sure? This action will delete this folder, and all files inside"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
+            </div>
+            </div>
+          </td>
+        </tr>
+      <%end%>
+    <% end %>
+
+    <% @files.each do |file| %>
+      <% if file.discarded_at == nil %>
+        <tr>
+          <td>
+            <% if file.present? %>
+              <i class="fa-solid fa-file"></i>
+            <% end %>
+          </td>
+          <td><p ><%= link_to file.file_name, admin_shared_file_path(file)%></p></td>
+          <td>
+            <div class="dropdown">
+              <a class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" id="dropdown_<%= file.id %>" aria-haspopup="true" aria-expanded="false"><i class="fa fa-cog" aria-hidden="true"></i></a>
+            <div class="dropdown-menu" aria-labelledby="dropdown_<%= file.id %>">   
+              <a class="dropdown-item" href="<%= admin_shared_file_path(file, folder_id: @folder.id) %>" data-turbo-method="delete" data-turbo-confirm="Are you sure? This action will delete this file"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a>
+            </div>
+          </td>
+        </tr>        
+      <% end %>  
+    <% end %>
+  </tbody>
+</table>
+
+<div class="folders-bottom-container">
+  <div class="folders-edit-folder">
+    <!-- <% if @folder.parent_folder_id.present?%>
+      <%= link_to "Back one folder", admin_folder_path(@folder.parent_folder_id), class: "btn btn-primary"%>
+    <% end %>   ***** DONT THINK WE NEED THIS ***-->
+    <% if @folder.parent_folder_id.blank?%>
+      <%= link_to "Delete Folder", admin_folder_path(@folder), data: { turbo_method: :delete, turbo_confirm: "Are you sure you want to delete this folder and all its contents?"}, class: "btn btn-danger" %>
+    <% elsif @folder.parent_folder_id.present? && @folders.empty? && @files.empty? %>
+      <%= link_to "Delete this Folder", admin_folder_path(@folder), data: { turbo_method: :delete, turbo_confirm: "Are you sure you want to delete this empty?"}, class: "btn btn-danger" %>
+    <% end %>
+    
+
+  </div>
+  <div class="file-upload-container">
+    <div class="form-group col-sm-12">
+      <div class="file-filepicker">
+        <%= filestack_picker_element "Upload File", "(function(files) { fileUploaded(files); })",
+              pickerOptions: {
+                accept: ['image/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                fromSources: ['local_file_system'],
+                storeTo: {
+                  location: "gcs",
+                  container: ENV["cloud_storage_bucket"],
+                  path: "static/"
+                },
+                maxFiles: 1,
+                imageMax: [1024, 728]
+              },
+              id: "fp", class: "btn btn-primary folders-button"
+        %>
+        <%= form_with model: @new_file, url: admin_shared_files_path, method: :post do |f| %>
+          <%= f.hidden_field :url %>
+          <%= f.hidden_field :folder_id, value: @folder.id %>
+          <%= f.hidden_field :file_name %>
+          <%= f.submit "Save File", class: "btn btn-primary folders-button" %>
+          <div id="uploaded-file-display"></div>
+        <% end %>
+      </div>
+    </div> 
+  </div> 
+</div>

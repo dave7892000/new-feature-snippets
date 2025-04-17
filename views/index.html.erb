@@ -1,0 +1,32 @@
+<div class="folders-list">
+  <div class="folders-heading">
+    <h2 class= "text-center">List of all folders</h2>
+  </div>
+  This will create a new folder:
+  <%= form_with model: @folder, url: admin_folders_path, method: :post, scope: :folder, data: { turbo: false } do |f| %>
+    <%= f.text_field :name %>
+    <%= f.submit "Create Folder" %>
+  <% end %>
+</div>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Folder Name</th>
+      <th>Link</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @folders.each do |folder| %>
+      <% if folder.parent_folder_id.nil? && folder.discarded_at.nil? %>
+        <tr>
+          <td><%= folder.name %></td>
+          <td><p ><%= link_to folder.name, admin_folder_path(folder)%></p></td>
+        </tr>
+      <%else%>
+      <%end%>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
